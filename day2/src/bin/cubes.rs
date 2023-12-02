@@ -64,7 +64,7 @@ impl Game
                 return false;
             }
         }
-        return true;
+        true
     }
 
     fn minimum_set(&self) -> GameSet
@@ -77,7 +77,7 @@ impl Game
             set_min.green = set_min.green.max(set.green);
             set_min.blue = set_min.blue.max(set.blue);
         }
-        return set_min;
+        set_min
     }
 }
 
@@ -128,7 +128,7 @@ fn parse_game(
         else { break; }
     }
 
-    return Some(game);
+    Some(game)
 }
 
 fn parse_set(
@@ -138,7 +138,7 @@ fn parse_set(
 {
     let mut set = GameSet { red: 0, green: 0, blue: 0 };
 
-    while let Some(_) = iter.peek()
+    while iter.peek().is_some()
     {
         skip_whitespace(iter);
         if let Some(value) = scan_integer(iter)
@@ -179,7 +179,7 @@ fn parse_set(
         else { break; }
     };
 
-    return set;
+    set
 }
 
 fn scan_word<'a>(
@@ -188,7 +188,7 @@ fn scan_word<'a>(
 ) -> Option<&'a str>
 {
 
-    if let Some(_) = iter.peek()
+    if iter.peek().is_some()
     {
         let (start, _) = iter.next().unwrap();
         let end = {
@@ -209,7 +209,7 @@ fn scan_word<'a>(
         return Some(&data[start..end]);
     }
 
-    return None;
+    None
 }
 
 fn scan_integer(iter: &mut Peekable<CharIndices>) -> Option<u32>
@@ -231,19 +231,15 @@ fn scan_integer(iter: &mut Peekable<CharIndices>) -> Option<u32>
         return Some(n);
     }
 
-    return None;
+    None
 }
 
 fn skip_whitespace(iter: &mut Peekable<CharIndices>)
 {
-    while let Some(_) = iter.next_if(|(_, c)| is_whitespace(c.to_owned())) {}
+    while iter.next_if(|(_, c)| is_whitespace(c.to_owned())).is_some() {}
 }
 
 fn is_whitespace(c: char) -> bool
 {
-    match c
-    {
-        ' ' | '\t' | '\r' | '\x0B' | '\x0C' => true,
-        _ => false
-    }
+    matches!(c, ' ' | '\t' | '\r' | '\x0B' | '\x0C')
 }
