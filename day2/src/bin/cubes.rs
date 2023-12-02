@@ -13,6 +13,10 @@ fn main()
     let mut sum_id = 0u32;
     let mut sum_set_power = 0u32;
     let mut iter = data.char_indices().peekable();
+
+    use std::time::Instant;
+    
+    let start = Instant::now();
     while let Some(game) = parse_game(&data, &mut iter)
     {
         if game.within_constraint(12, 13, 14)
@@ -23,6 +27,8 @@ fn main()
         let set_min = game.minimum_set();
         sum_set_power += set_min.red * set_min.green * set_min.blue;
     }
+
+    println!("Elapsed time: {}ns", start.elapsed().as_nanos());
 
     println!("Game ID sum: {}", sum_id);
     println!("Game set power sum: {}", sum_set_power);
