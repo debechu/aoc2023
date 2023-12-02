@@ -81,7 +81,7 @@ fn parse_game(
 ) -> Option<Game>
 {
     skip_whitespace(iter);
-    if let Some(word) = parse_word(data, iter)
+    if let Some(word) = scan_word(data, iter)
     {
         if word.chars().ne("Game".chars())
         {
@@ -92,7 +92,7 @@ fn parse_game(
 
     skip_whitespace(iter);
     let mut game = Game {
-        id: parse_integer(iter).expect("Expected Game ID!"),
+        id: scan_integer(iter).expect("Expected Game ID!"),
         set_count: 0,
         sets: [ GameSet { red: 0, green: 0, blue: 0 }; MAX_SET_COUNT]
     };
@@ -135,10 +135,10 @@ fn parse_set(
     while let Some(_) = iter.peek()
     {
         skip_whitespace(iter);
-        if let Some(value) = parse_integer(iter)
+        if let Some(value) = scan_integer(iter)
         {
             skip_whitespace(iter);
-            let word = parse_word(data, iter)
+            let word = scan_word(data, iter)
                 .expect("Expected token 'red', 'green' or 'blue'!");
             if word.chars().eq("red".chars())
             {
@@ -176,7 +176,7 @@ fn parse_set(
     return set;
 }
 
-fn parse_word<'a>(
+fn scan_word<'a>(
     data: &'a String,
     iter: &mut Peekable<CharIndices>
 ) -> Option<&'a str>
@@ -206,7 +206,7 @@ fn parse_word<'a>(
     return None;
 }
 
-fn parse_integer(iter: &mut Peekable<CharIndices>) -> Option<u32>
+fn scan_integer(iter: &mut Peekable<CharIndices>) -> Option<u32>
 {
     if let Some((_, c)) = iter.peek()
     {
