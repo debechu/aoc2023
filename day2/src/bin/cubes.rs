@@ -27,11 +27,11 @@ fn main()
         let set_min = game.minimum_set();
         sum_set_power += set_min.red * set_min.green * set_min.blue;
     }
-
-    println!("Elapsed time: {}ns", start.elapsed().as_nanos());
+    let elapsed = start.elapsed().as_nanos();
 
     println!("Game ID sum: {}", sum_id);
     println!("Game set power sum: {}", sum_set_power);
+    println!("Elapsed time: {}", elapsed);
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -114,8 +114,7 @@ fn parse_game(
         skip_whitespace(iter);
         if let Some((_, c)) = iter.peek()
         {
-            let c = c.to_owned();
-            if c == '\n'
+            if c == &'\n'
             {
                 iter.next();
                 break;
@@ -167,7 +166,6 @@ fn parse_set(
         skip_whitespace(iter);
         if let Some((_, c)) = iter.peek()
         {
-            let c = c.to_owned();
             match c
             {
                 ',' => { iter.next(); },
@@ -194,9 +192,8 @@ fn scan_word<'a>(
         let end = {
             while let Some((_, c)) = iter.peek()
             {
-                let c = c.to_owned();
                 if c.is_ascii_whitespace() { break; }
-                if c == ',' || c == ';' { break; }
+                if c == &',' || c == &';' { break; }
                 iter.next();
             }
 
@@ -236,10 +233,7 @@ fn scan_integer(iter: &mut Peekable<CharIndices>) -> Option<u32>
 
 fn skip_whitespace(iter: &mut Peekable<CharIndices>)
 {
-    while iter.next_if(|(_, c)| is_whitespace(c.to_owned())).is_some() {}
-}
-
-fn is_whitespace(c: char) -> bool
-{
-    matches!(c, ' ' | '\t' | '\r' | '\x0B' | '\x0C')
+    while iter.next_if(|(_, c)| {
+        matches!(c, ' ' | '\t' | '\r' | '\x0B' | '\x0C')
+    }).is_some() {}
 }
