@@ -19,8 +19,6 @@ fn main()
     let schematic = parse_engine_schematic(&data);
     let parse_time = start.elapsed().as_nanos();
 
-    println!("Nums {}, symbols {}, gears {}", schematic.numbers.len(), schematic.symbols.len(), schematic.gears.len());
-
     let start = Instant::now();
     let mut sum = 0u32;
     let mut checked = vec![false; schematic.numbers.len()];
@@ -30,22 +28,21 @@ fn main()
             if symbol.pos.y == 0 {
                 0
             } else {
-                schematic.number_lines[(symbol.pos.y-1) as usize] as usize
+                schematic.number_lines[(symbol.pos.y-1) as usize]
             };
         let end =
-            if symbol.pos.y as usize == schematic.number_lines.len()-1 {
+            if (symbol.pos.y+2) as usize == schematic.number_lines.len() {
                 schematic.numbers.len()
             } else {
-                schematic.number_lines[(symbol.pos.y+1) as usize] as usize
+                schematic.number_lines[(symbol.pos.y+2) as usize]
             };
 
-        for i in start..end
+        for (i, number) in schematic.numbers.iter()
+            .enumerate().skip(start).take(end)
         {
             if checked[i] { continue; }
 
-            let number = &schematic.numbers[i];
             let diff = symbol.pos - number.pos;
-            
             if (diff.x >= -1 && diff.x <= number.len) && diff.y.abs() <= 1
             {
                 sum += number.value;
@@ -63,13 +60,13 @@ fn main()
             if gear.pos.y == 0 {
                 0
             } else {
-                schematic.number_lines[(gear.pos.y-1) as usize] as usize
+                schematic.number_lines[(gear.pos.y-1) as usize]
             };
         let end =
-            if gear.pos.y as usize == schematic.number_lines.len()-1 {
+            if (gear.pos.y+2) as usize == schematic.number_lines.len() {
                 schematic.numbers.len()
             } else {
-                schematic.number_lines[(gear.pos.y+1) as usize] as usize
+                schematic.number_lines[(gear.pos.y+2) as usize]
             };
 
         let mut adjacents = 0u32;
@@ -138,7 +135,7 @@ const MIN_CAPACITY: usize = 1600;
 #[derive(Debug)]
 struct EngineSchematic
 {
-    number_lines: Vec<u32>,
+    number_lines: Vec<usize>,
     numbers: Vec<SchematicNumber>,
     symbols: Vec<SchematicSymbol>,
     gears: Vec<SchematicSymbol>,
@@ -146,7 +143,7 @@ struct EngineSchematic
 
 fn parse_engine_schematic(schematic: &str) -> EngineSchematic
 {
-    let mut number_lines: Vec<u32> = Vec::with_capacity(MIN_CAPACITY);
+    let mut number_lines: Vec<usize> = Vec::with_capacity(MIN_CAPACITY);
     let mut numbers: Vec<SchematicNumber> = Vec::with_capacity(MIN_CAPACITY);
     let mut symbols: Vec<SchematicSymbol> = Vec::with_capacity(MIN_CAPACITY);
     let mut gears: Vec<SchematicSymbol> = Vec::with_capacity(MIN_CAPACITY);
@@ -154,7 +151,7 @@ fn parse_engine_schematic(schematic: &str) -> EngineSchematic
     let mut line = 0u32;
     let mut line_width: Option<u32> = None;
 
-    let mut last_line = 0;
+    number_lines.push(0);
 
     let mut iter = schematic.chars().enumerate().peekable();
     while iter.peek().is_some()
@@ -187,12 +184,11 @@ fn parse_engine_schematic(schematic: &str) -> EngineSchematic
                     line_width = Some(column);
                 }
 
+                number_lines.push(numbers.len());
+
                 line += 1;
                 column = 0;
                 iter.next();
-
-                number_lines.push(last_line);
-                last_line = line;
             }
             else
             {
