@@ -21,32 +21,27 @@ fn main()
 
     let start = Instant::now();
     let mut sum = 0u32;
-    let mut checked = vec![false; schematic.numbers.len()];
-    for symbol in &schematic.symbols
+    for number in &schematic.numbers
     {
         let start =
-            if symbol.pos.y == 0 {
+            if number.pos.y == 0 {
                 0
             } else {
-                schematic.number_lines[(symbol.pos.y-1) as usize]
+                schematic.symbol_lines[(number.pos.y-1) as usize]
             };
         let end =
-            if (symbol.pos.y+2) as usize == schematic.number_lines.len() {
-                schematic.numbers.len()
+            if (number.pos.y+2) as usize == schematic.symbol_lines.len() {
+                schematic.symbols.len()
             } else {
-                schematic.number_lines[(symbol.pos.y+2) as usize]
+                schematic.symbol_lines[(number.pos.y+2) as usize]
             };
 
-        for (i, number) in schematic.numbers.iter()
-            .enumerate().skip(start).take(end)
+        for symbol in &schematic.symbols[start..end]
         {
-            if checked[i] { continue; }
-
             let diff = symbol.pos - number.pos;
             if (diff.x >= -1 && diff.x <= number.len) && diff.y.abs() <= 1
             {
                 sum += number.value;
-                checked[i] = true;
             }
         }
     }
@@ -137,6 +132,7 @@ struct EngineSchematic
 {
     number_lines: Vec<usize>,
     numbers: Vec<SchematicNumber>,
+    symbol_lines: Vec<usize>,
     symbols: Vec<SchematicSymbol>,
     gears: Vec<SchematicSymbol>,
 }
@@ -145,6 +141,7 @@ fn parse_engine_schematic(schematic: &str) -> EngineSchematic
 {
     let mut number_lines: Vec<usize> = Vec::with_capacity(MIN_CAPACITY);
     let mut numbers: Vec<SchematicNumber> = Vec::with_capacity(MIN_CAPACITY);
+    let mut symbol_lines: Vec<usize> = Vec::with_capacity(MIN_CAPACITY);
     let mut symbols: Vec<SchematicSymbol> = Vec::with_capacity(MIN_CAPACITY);
     let mut gears: Vec<SchematicSymbol> = Vec::with_capacity(MIN_CAPACITY);
     let mut column = 0u32;
@@ -152,6 +149,7 @@ fn parse_engine_schematic(schematic: &str) -> EngineSchematic
     let mut line_width: Option<u32> = None;
 
     number_lines.push(0);
+    symbol_lines.push(0);
 
     let mut iter = schematic.chars().enumerate().peekable();
     while iter.peek().is_some()
@@ -185,6 +183,7 @@ fn parse_engine_schematic(schematic: &str) -> EngineSchematic
                 }
 
                 number_lines.push(numbers.len());
+                symbol_lines.push(symbols.len());
 
                 line += 1;
                 column = 0;
@@ -210,6 +209,7 @@ fn parse_engine_schematic(schematic: &str) -> EngineSchematic
     EngineSchematic {
         number_lines,
         numbers,
+        symbol_lines,
         symbols,
         gears,
     }
