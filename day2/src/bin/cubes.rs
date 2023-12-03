@@ -31,7 +31,7 @@ fn main()
 
     println!("Game ID sum: {}", sum_id);
     println!("Game set power sum: {}", sum_set_power);
-    println!("Elapsed time: {}", elapsed);
+    println!("Elapsed time: {}ns", elapsed);
 }
 
 #[derive(Clone, Copy, Debug)]
