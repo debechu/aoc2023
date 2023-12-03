@@ -23,18 +23,8 @@ fn main()
     let mut sum = 0u32;
     for number in &schematic.numbers
     {
-        let start =
-            if number.pos.y == 0 {
-                0
-            } else {
-                schematic.symbol_lines[(number.pos.y-1) as usize]
-            };
-        let end =
-            if (number.pos.y+2) as usize == schematic.symbol_lines.len() {
-                schematic.symbols.len()
-            } else {
-                schematic.symbol_lines[(number.pos.y+2) as usize]
-            };
+        let start = schematic.symbol_lines[number.pos.y as usize];
+        let end = schematic.symbol_lines[(number.pos.y+3) as usize];
 
         for symbol in &schematic.symbols[start..end]
         {
@@ -51,18 +41,8 @@ fn main()
     let mut sum_gear_ratio = 0u32;
     for gear in &schematic.gears
     {
-        let start =
-            if gear.pos.y == 0 {
-                0
-            } else {
-                schematic.number_lines[(gear.pos.y-1) as usize]
-            };
-        let end =
-            if (gear.pos.y+2) as usize == schematic.number_lines.len() {
-                schematic.numbers.len()
-            } else {
-                schematic.number_lines[(gear.pos.y+2) as usize]
-            };
+        let start = schematic.number_lines[gear.pos.y as usize];
+        let end = schematic.number_lines[(gear.pos.y+3) as usize];
 
         let mut adjacents = 0u32;
         let mut gear_ratio = 1u32;
@@ -149,6 +129,8 @@ fn parse_engine_schematic(schematic: &str) -> EngineSchematic
     let mut line_width: Option<u32> = None;
 
     number_lines.push(0);
+    number_lines.push(0);
+    symbol_lines.push(0);
     symbol_lines.push(0);
 
     let mut iter = schematic.chars().enumerate().peekable();
@@ -205,6 +187,9 @@ fn parse_engine_schematic(schematic: &str) -> EngineSchematic
             }
         }
     }
+
+    number_lines.push(numbers.len());
+    symbol_lines.push(symbols.len());
 
     EngineSchematic {
         number_lines,
