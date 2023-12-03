@@ -47,25 +47,22 @@ fn main()
 
     let start = Instant::now();
     let mut sum_gear_ratio = 0u32;
-    let mut checked = 0usize;
     for gear in &schematic.gears
     {
-        let start = checked;
+        let mut adjacents = 0u32;
         let mut gear_ratio = 1u32;
-        for i in start..schematic.numbers.len()
+        for number in &schematic.numbers
         {
-            let number = &schematic.numbers[i];
             let diff = gear.pos - number.pos;
             
             if (diff.x >= -1 && diff.x <= number.len) && diff.y.abs() <= 1
             {
                 gear_ratio *= number.value;
-                schematic.numbers.swap(checked, i);
-                checked += 1;
+                adjacents += 1;
             }
         }
 
-        if checked - start == 2
+        if adjacents == 2
         {
             sum_gear_ratio += gear_ratio;
         }
