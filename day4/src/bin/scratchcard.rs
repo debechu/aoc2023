@@ -13,7 +13,7 @@ fn main()
     use std::time::Instant;
     let start = Instant::now();
 
-    let mut total_points = 0u64;
+    let mut total_points = 0u32;
     let mut total_cards = 0u32;
     let mut copies = [1u32; 199];
 
@@ -43,7 +43,7 @@ fn main()
         }
 
         total_points += {
-            let mut points = 5u64;
+            let mut points = 5u32;
             for _ in 0..wins
             {
                 points *= 2;
@@ -78,7 +78,7 @@ fn parse_card(iter: &mut Peekable<Chars>) -> Option<Card>
         
         skip_whitespace(iter);
         let mut card = Card{
-            id: parse_number(iter).expect("Expected number!"),
+            id: scan_number(iter).expect("Expected number!"),
             winnings: [0u32; 10],
             numbers: [0u32; 25],
         };
@@ -91,7 +91,7 @@ fn parse_card(iter: &mut Peekable<Chars>) -> Option<Card>
 
         let mut i = 0;
         skip_whitespace(iter);
-        while let Some(n) = parse_number(iter)
+        while let Some(n) = scan_number(iter)
         {
             card.winnings[i] = n;
             skip_whitespace(iter);
@@ -105,7 +105,7 @@ fn parse_card(iter: &mut Peekable<Chars>) -> Option<Card>
 
         let mut i = 0;
         skip_whitespace(iter);
-        while let Some(n) = parse_number(iter)
+        while let Some(n) = scan_number(iter)
         {
             card.numbers[i] = n;
             skip_whitespace(iter);
@@ -154,12 +154,13 @@ fn match_card(iter: &mut Peekable<Chars>) -> bool
     true
 }
 
-fn parse_number(iter: &mut Peekable<Chars>) -> Option<u32>
+fn scan_number(iter: &mut Peekable<Chars>) -> Option<u32>
 {
     if let Some(c) = iter.peek()
     {
         if !c.is_ascii_digit() { return None; }
     }
+    else { return None; }
 
     let mut n = 0;
     while let Some(c) = iter.peek()
