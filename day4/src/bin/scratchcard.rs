@@ -34,14 +34,6 @@ fn main()
         }
         let wins = wins;
 
-        let current_copy = copies[(card.id-1) as usize];
-        total_cards += current_copy;
-
-        for i in 0..wins
-        {
-            copies[(card.id+i) as usize] += current_copy;
-        }
-
         total_points += {
             let mut points = 5u32;
             for _ in 0..wins
@@ -50,6 +42,14 @@ fn main()
             }
             points / 10
         };
+
+        let current_copy = copies[(card.id-1) as usize];
+        total_cards += current_copy;
+
+        for i in 0..wins
+        {
+            copies[(card.id+i) as usize] += current_copy;
+        }
     }
 
     let elapsed_time = start.elapsed();
