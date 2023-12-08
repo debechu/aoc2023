@@ -2,7 +2,7 @@
 There's no need for any code, it's literally a math problem.
 
 ## Solution
-Distance achieved in reliance with the charge and maximum time:
+Distance achieved in relation with the charge and maximum time:
 > S(t, t_max) = t*t_max - t^2
 > 
 > with:
