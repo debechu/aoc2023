@@ -23,7 +23,15 @@ fn main()
     let part1_time = start.elapsed();
 
     let start = Instant::now();
-    let min_location2 = part2(&almanac);
+    let mut map = almanac.maps[0].clone();
+    {
+        map.name = "seed-to-location";
+        map.chain_with(&almanac.maps[1..]);
+    }
+    let map_generation_time = start.elapsed();
+    
+    let start = Instant::now();
+    let min_location2 = part2(&almanac.seeds[..], &map);
     let part2_time = start.elapsed();
 
     println!("Closest seed location: {}", min_location);
@@ -31,7 +39,12 @@ fn main()
     println!("==== Elapsed time");
     println!("- Parse time....: {}ns", parse_time.as_nanos());
     println!("- Part 1 time...: {}ns", part1_time.as_nanos());
-    println!("- Part 2 time...: {}ns", part2_time.as_nanos());
+    println!(
+        "- Part 2 time...: {}ns ({}ns + {}ns)",
+        (map_generation_time + part2_time).as_nanos(),
+        map_generation_time.as_nanos(),
+        part2_time.as_nanos()
+    );
 }
 
 fn part1(almanac: &Almanac) -> u64
@@ -65,19 +78,13 @@ fn part1(almanac: &Almanac) -> u64
     min_location
 }
 
-fn part2(almanac: &Almanac) -> u64
+fn part2(seeds: &[u64], map: &Map) -> u64
 {
-    let mut map = almanac.maps[0].clone();
-    {
-        map.name = "seed-to-location";
-        map.chain_with(&almanac.maps[1..]);
-    }
-
     let mut min_location = u64::MAX;
-    for i in (0..almanac.seeds.len()).step_by(2)
+    for i in (0..seeds.len()).step_by(2)
     {
-        let mut start = almanac.seeds[i];
-        let mut count = almanac.seeds[i+1];
+        let mut start = seeds[i];
+        let mut count = seeds[i+1];
         while count > 0
         {
             let mut index = map.sources.len() as isize - 1;
@@ -132,6 +139,7 @@ impl<'a> Map<'a>
 {
     fn chain_with(&mut self, others: &[Map])
     {
+        // TODO(debe): Find a way to not create these
         let mut sources = Vec::with_capacity(self.sources.capacity());
         let mut destinations = Vec::with_capacity(self.destinations.capacity());
         let mut counts = Vec::with_capacity(self.counts.capacity());
