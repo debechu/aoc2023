@@ -84,6 +84,9 @@ fn quicksort_divide(
             bids.swap(i, j);
         }
         else { break; }
+
+        i += 1;
+        j -= 1;
     }
 
     hands.swap(pivot, i);
