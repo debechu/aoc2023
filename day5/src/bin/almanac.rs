@@ -6,6 +6,7 @@ use std::iter::{
     Iterator,
     Peekable,
 };
+use std::ops::Range;
 use std::str::CharIndices;
 
 fn main()
@@ -139,7 +140,6 @@ impl<'a> Map<'a>
 {
     fn chain_with(&mut self, others: &[Map])
     {
-        // TODO(debe): Find a way to not create these
         let mut sources = Vec::with_capacity(self.sources.capacity());
         let mut destinations = Vec::with_capacity(self.destinations.capacity());
         let mut counts = Vec::with_capacity(self.counts.capacity());
@@ -150,27 +150,17 @@ impl<'a> Map<'a>
 
         for other in others
         {
-            // Sort by destinations
-            for i in (1..self.destinations.len()).rev()
-            {
-                let mut sorted = true;
-                for j in 0..i
-                {
-                    if self.destinations[j+1] < self.destinations[j]
-                    {
-                        self.sources.swap(j, j+1);
-                        self.destinations.swap(j, j+1);
-                        self.counts.swap(j, j+1);
-
-                        sources.swap(j, j+1);
-                        destinations.swap(j, j+1);
-                        counts.swap(j, j+1);
-
-                        sorted = false;
-                    }
-                }
-                if sorted { break; }
-            }
+            quicksort(
+                0..self.destinations.len(),
+                &mut self.destinations,
+                &mut [
+                    &mut self.sources,
+                    &mut self.counts,
+                    &mut destinations,
+                    &mut sources,
+                    &mut counts,
+                ]
+            );
 
             let mut self_index = 0;
             let mut other_index = 0;
@@ -317,22 +307,14 @@ impl<'a> Map<'a>
         }
 
         // Sort by sources
-        for i in (1..self.sources.len()).rev()
-        {
-            let mut sorted = true;
-            for j in 0..i
-            {
-                if self.sources[j+1] < self.sources[j]
-                {
-                    self.sources.swap(j, j+1);
-                    self.destinations.swap(j, j+1);
-                    self.counts.swap(j, j+1);
-
-                    sorted = false;
-                }
-            }
-            if sorted { break; }
-        }
+        quicksort(
+            0..self.sources.len(),
+            &mut self.sources,
+            &mut [
+                &mut self.destinations,
+                &mut self.counts,
+            ]
+        );
 
         // Merge any continous adjacent sources that
         // has continous adjacent destinations
@@ -363,6 +345,55 @@ impl<'a> Map<'a>
     }
 }
 
+fn quicksort(
+    range: Range<usize>,
+    keys: &mut [u64],
+    others: &mut [&mut [u64]])
+{
+    if (range.start as isize) < range.end as isize - 1
+    {
+        let pivot = quicksort_divide(range.clone(), keys, others);
+        quicksort(range.start..pivot, keys, others);
+        quicksort(pivot+1..range.end, keys, others);
+    }
+}
+
+fn quicksort_divide(
+    range: Range<usize>,
+    keys: &mut [u64],
+    others: &mut [&mut [u64]]
+) -> usize
+{
+    let pivot = range.end-1;
+    let mut i = range.start;
+    let mut j = range.end-2;
+    loop
+    {
+        while i < range.end && keys[i] < keys[pivot] { i += 1; }
+        while j > range.start && keys[j] > keys[pivot] { j -= 1; }
+
+        if i < j
+        {
+            keys.swap(i, j);
+            for other in others.iter_mut()
+            {
+                other.swap(i, j);
+            }
+        }
+        else { break; }
+
+        i += 1;
+        j -= 1;
+    }
+
+    keys.swap(pivot, i);
+    for other in others.iter_mut()
+    {
+        other.swap(pivot, i);
+    }
+
+    i
+}
 
 impl<'a> Clone for Map<'a>
 {
