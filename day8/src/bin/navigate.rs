@@ -18,21 +18,21 @@ fn main()
     let start = Instant::now();
     let mut num_instructions = 0;
     let mut iter = maps.instructions.chars();
-    let mut current_id = 0;
+    let mut current_node = maps.node_index.get(0).unwrap();
     loop
     {
-        if current_id == 26425
-        {
-            break;
-        }
-
         if let Some(instruction) = iter.next()
         {
-            let node = maps.nodes.get(current_id).unwrap();
+            let node = maps.nodes[current_node];
+            if node.id == 26425
+            {
+                break;
+            }
+
             match instruction
             {
-                'L' => current_id = node.left,
-                'R' => current_id = node.right,
+                'L' => current_node= node.left,
+                'R' => current_node= node.right,
                 _ => (),
             }
             num_instructions += 1;
@@ -42,32 +42,31 @@ fn main()
     let part1_time = start.elapsed();
 
     let start = Instant::now();
-    let mut current_ids = maps.starting_points.clone();
-    let mut current_instructions = Vec::with_capacity(current_ids.capacity());
+    let mut current_indices = maps.starting_points.clone();
+    let mut current_instructions = Vec::with_capacity(current_indices.capacity());
     let mut counter = 0u64;
     let mut iter = maps.instructions.chars().peekable();
     loop
     {
-        if current_ids.is_empty() { break; }
+        if current_indices.is_empty() { break; }
 
         if let Some(instruction) = iter.next()
         {
             let mut i = 0;
-            while i < current_ids.len()
+            while i < current_indices.len()
             {
-                let current_id = current_ids[i];
-                if current_id & 0x1F == 25
+                let node = maps.nodes[current_indices[i]];
+                if node.id & 0x1F == 25
                 {
-                    current_ids.swap_remove(i);
+                    current_indices.swap_remove(i);
                     current_instructions.push(counter);
                     continue;
                 }
 
-                let node = maps.nodes.get(current_id).unwrap();
                 match instruction
                 {
-                    'L' => current_ids[i] = node.left,
-                    'R' => current_ids[i] = node.right,
+                    'L' => current_indices[i] = node.left,
+                    'R' => current_indices[i] = node.right,
                     _ => (),
                 }
 
@@ -144,51 +143,52 @@ impl From<u32> for NodeId
 #[derive(Clone, Copy, Debug)]
 struct Node
 {
-    left: u32,
-    right: u32,
+    id: u32,
+    left: usize,
+    right: usize,
 }
 
-struct NodeMap
+struct NodeIndex
 {
     keys: Vec<Option<u32>>,
-    nodes: Vec<Node>,
+    indices: Vec<usize>,
 }
 
-impl NodeMap
+impl NodeIndex
 {
     fn with_capacity(capacity: usize) -> Self
     {
         Self {
             keys: vec![None; capacity],
-            nodes: vec![Node { left: 0, right: 0 }; capacity],
+            indices: vec![0; capacity],
         }
     }
 
-    fn set(&mut self, key: u32, node: Node)
+    fn set(&mut self, key: u32, index: usize)
     {
         let start = key as usize % self.keys.capacity();
-        let mut index = start;
+        let mut i = start;
         loop
         {
-            match self.keys[index]
+            match self.keys[i]
             {
                 Some(k) => if key == k { break; },
                 None => {
-                    self.keys[index] = Some(key);
+                    self.keys[i] = Some(key);
                     break;
                 },
             }
 
-            index = (index + 1) % self.keys.capacity();
-            if index == start
+            i = (i + 1) % self.keys.capacity();
+            if i == start
             {
                 panic!("Full capacity reached!");
             }
         }
-        self.nodes[index] = node;
+        self.indices[i] = index;
     }
 
-    fn get(&self, key: u32) -> Option<Node>
+    fn get(&self, key: u32) -> Option<usize>
     {
         let start = key as usize % self.keys.capacity();
         let mut index = start;
@@ -196,7 +196,7 @@ impl NodeMap
         {
             match self.keys[index]
             {
-                Some(k) => if key == k { return Some(self.nodes[index]); },
+                Some(k) => if key == k { return Some(self.indices[index]); },
                 None => return None,
             }
 
@@ -212,8 +212,9 @@ impl NodeMap
 struct Maps<'a>
 {
     instructions: &'a str,
-    nodes: NodeMap,
-    starting_points: Vec<u32>,
+    nodes: Vec<Node>,
+    node_index: NodeIndex,
+    starting_points: Vec<usize>,
 }
 
 fn parse_map(data: &str) -> Maps
@@ -231,26 +232,37 @@ fn parse_map(data: &str) -> Maps
     skip_whitespace(&mut iter);
     expect_newline(&mut iter);
 
-    let mut nodes = NodeMap::with_capacity(1000);
+    let mut nodes = Vec::with_capacity(800);
+    let mut node_index = NodeIndex::with_capacity(1500);
     let mut starting_points = Vec::with_capacity(25);
 
-    while let Some((id, node)) = parse_node(&mut iter)
+    while let Some(node) = parse_node(&mut iter)
     {
-        nodes.set(id, node);
-        if id & 0x1F == 0
+        let index = nodes.len();
+        nodes.push(node);
+        node_index.set(node.id, index);
+        if node.id & 0x1F == 0
         {
-            starting_points.push(id);
+            starting_points.push(index);
         }
+    }
+
+    // Resolve nodes
+    for node in nodes.iter_mut()
+    {
+        node.left = node_index.get(node.left as u32).unwrap();
+        node.right = node_index.get(node.right as u32).unwrap();
     }
 
     Maps {
         instructions,
         nodes,
+        node_index,
         starting_points,
     }
 }
 
-fn parse_node(iter: &mut Peekable<CharIndices>) -> Option<(u32, Node)>
+fn parse_node(iter: &mut Peekable<CharIndices>) -> Option<Node>
 {
     skip_all_whitespace(iter);
     if iter.peek().is_none() { return None; }
@@ -263,20 +275,20 @@ fn parse_node(iter: &mut Peekable<CharIndices>) -> Option<(u32, Node)>
     expect_char(iter, '(');
 
     skip_whitespace(iter);
-    let left = scan_node_id(iter);
+    let left = scan_node_id(iter) as usize;
 
     skip_whitespace(iter);
     expect_char(iter, ',');
 
     skip_whitespace(iter);
-    let right = scan_node_id(iter);
+    let right = scan_node_id(iter) as usize;
 
     skip_whitespace(iter);
     expect_char(iter, ')');
     skip_whitespace(iter);
     expect_newline(iter);
 
-    Some((id, Node { left, right }))
+    Some(Node { id, left, right })
 }
 
 fn scan_node_id(iter: &mut Peekable<CharIndices>) -> u32
