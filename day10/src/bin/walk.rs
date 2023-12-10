@@ -30,220 +30,119 @@ fn main()
     let parse_time = start.elapsed();
 
     let start = Instant::now();
-    let mut paths = [
-        starting_point + RIGHT,
-        starting_point + DOWN,
-    ];
-    let mut previous_positions = [
-        starting_point,
-        starting_point,
-    ];
+    let mut current_pos = starting_point + RIGHT;
+    let mut prev_pos = starting_point;
     let mut num_steps = 1;
-    while paths[0] != paths[1]
+    while current_pos != starting_point
     {
-        for i in 0..paths.len()
-        {
-            let current_pos = paths[i];
-            let move_direction = current_pos - previous_positions[i];
-            previous_positions[i] = current_pos;
+        let move_direction = current_pos - prev_pos;
+        prev_pos = current_pos;
 
-            let index = usize::from(current_pos);
-            match map[index]
-            {
-                b'|' | b'-' => paths[i] = current_pos + move_direction,
-                b'L' => if move_direction.x == 0 {
-                    paths[i] += RIGHT;
-                } else { paths[i] += UP; },
-                b'J' => if move_direction.x == 0 {
-                    paths[i] += LEFT;
-                } else { paths[i] += UP; },
-                b'7' => if move_direction.x == 0 {
-                    paths[i] += LEFT;
-                } else { paths[i] += DOWN; },
-                b'F' => if move_direction.x == 0 {
-                    paths[i] += RIGHT;
-                } else { paths[i] += DOWN; },
-                _ => (),
-            }
+        let index = usize::from(current_pos);
+        match map[index]
+        {
+            b'|' | b'-' => current_pos = current_pos + move_direction,
+            b'L' => if move_direction.x == 0 {
+                current_pos += RIGHT;
+            } else { current_pos += UP; },
+            b'J' => if move_direction.x == 0 {
+                current_pos += LEFT;
+            } else { current_pos += UP; },
+            b'7' => if move_direction.x == 0 {
+                current_pos += LEFT;
+            } else { current_pos += DOWN; },
+            b'F' => if move_direction.x == 0 {
+                current_pos += RIGHT;
+            } else { current_pos += DOWN; },
+            _ => (),
         }
         num_steps += 1;
     }
+    num_steps >>= 1;
     let part1_time = start.elapsed();
 
     let start = Instant::now();
     let mut draw = vec![b'.'; map.capacity()];
-    draw[usize::from(starting_point)] = b'#';
+    draw[usize::from(starting_point)] = b'F';
 
-    let mut paths = [
-        Vec2 { x: starting_point.x+1, y: starting_point.y},
-        Vec2 { x: starting_point.x, y: starting_point.y+1},
-    ];
-    let mut previous_positions = [
-        starting_point,
-        starting_point,
-    ];
-    let mut num_loop_tiles = 1;
-    loop
+    let mut current_pos = starting_point + RIGHT;
+    let mut prev_pos = starting_point;
+    while current_pos != starting_point
     {
-        for i in 0..paths.len()
-        {
-            let current_pos = paths[i];
-            let move_direction = current_pos - previous_positions[i];
-            previous_positions[i] = current_pos;
+        let move_direction = current_pos - prev_pos;
+        prev_pos = current_pos;
 
-            let index = usize::from(current_pos);
-            draw[index] = map[index];
-            match map[index]
-            {
-                b'|' | b'-' => paths[i] = current_pos + move_direction,
-                b'L' => if move_direction.x == 0 {
-                    paths[i].x += 1;
-                } else { paths[i].y -= 1; },
-                b'J' => if move_direction.x == 0 {
-                    paths[i].x -= 1;
-                } else { paths[i].y -= 1; },
-                b'7' => if move_direction.x == 0 {
-                    paths[i].x -= 1;
-                } else { paths[i].y += 1; },
-                b'F' => if move_direction.x == 0 {
-                    paths[i].x += 1;
-                } else { paths[i].y += 1; },
-                _ => (),
-            }
+        let index = usize::from(current_pos);
+        let current = map[index];
+        match current
+        {
+            b'|' | b'-' => current_pos = current_pos + move_direction,
+            b'L' => if move_direction.x == 0 {
+                current_pos += RIGHT;
+            } else { current_pos += UP; },
+            b'J' => if move_direction.x == 0 {
+                current_pos += LEFT;
+            } else { current_pos += UP; },
+            b'7' => if move_direction.x == 0 {
+                current_pos += LEFT;
+            } else { current_pos += DOWN; },
+            b'F' => if move_direction.x == 0 {
+                current_pos += RIGHT;
+            } else { current_pos += DOWN; },
+            _ => (),
+        }
+        draw[index] = current;
+    }
+
+    let mut num_enclosed_tiles = 0;
+    let mut last_pipe = b'.';
+    let mut enclosed = false;
+    let mut prev_line = 0;
+    for i in 0..MAP_WIDTH*MAP_HEIGHT
+    {
+        let line = i / MAP_WIDTH; 
+        if line != prev_line
+        {
+            prev_line = line;
+            last_pipe = b'.';
+            enclosed = false;
         }
 
-        if previous_positions[0] == previous_positions[1] { break; }
-        num_loop_tiles += 1;
-    }
-    num_loop_tiles *= 2;
-
-    let mut num_open_tiles = 0;
-    for i in 0..MAP_WIDTH
-    {
-        if draw[i] != b'.' { continue; }
-        draw[i] = b'O';
-        num_open_tiles += 1;
-    }
-    for i in (MAP_HEIGHT-1)*MAP_WIDTH..draw.len()
-    {
-        if draw[i] != b'.' { continue; }
-        draw[i] = b'O';
-        num_open_tiles += 1;
-    }
-
-    let surroundings = [
-        LEFT,
-        RIGHT,
-        UP + LEFT,
-        UP,
-        UP + RIGHT,
-        DOWN + LEFT,
-        DOWN,
-        DOWN + RIGHT,
-    ];
-    for y in 1..MAP_HEIGHT-1
-    {
-        let first = coord_to_index(0, y as i16);
-        if draw[first] == b'.'
+        let current = draw[i];
+        match current
         {
-            draw[first] = b'O';
-            num_open_tiles += 1;
-        }
-
-        for x in 1..MAP_WIDTH-1
-        {
-            let index = coord_to_index(x as i16, y as i16);
-            if draw[index] != b'.'
-            {
-                continue;
-            }
-
-            let current_pos = Vec2 { x: x as i16, y: y as i16 };
-            let mut enclosed = true;
-        'check:
-            for &surrounding in &surroundings
-            {
-                if draw[usize::from(current_pos + surrounding)] ==  b'O'
+            b'.' => (),
+            b'J' => {
+                if last_pipe != b'F'
                 {
-                    for y in (1..=current_pos.y).rev()
-                    {
-                        let first = coord_to_index(current_pos.x, y);
-                        if !matches!(draw[first], b'.' | b'I') { break; }
-                        draw[first] = b'O';
-                        num_open_tiles += 1;
-
-                        for x in (1..current_pos.x).rev()
-                        {
-                            let current = coord_to_index(x, y);
-                            if !matches!(draw[first], b'.' | b'I') { break; }
-                            draw[current] = b'O';
-                            num_open_tiles += 1;
-                        }
-                    }
-                    enclosed = false;
-                    break 'check;
+                    enclosed = !enclosed;
                 }
-            }
-
-            if enclosed { draw[index] = b'I'; }
-        }
-
-        let last = coord_to_index(MAP_WIDTH as i16 - 1, y as i16);
-        if draw[last] == b'.'
-        {
-            draw[last] = b'O';
-            num_open_tiles += 1;
-        }
-    }
-    for y in (1..MAP_HEIGHT-1).rev()
-    {
-        for x in (1..MAP_WIDTH-1).rev()
-        {
-            if draw[coord_to_index(x as i16, y as i16)] != b'I'
-            {
+                last_pipe = current;
                 continue;
-            }
-
-            let current_pos = Vec2 { x: x as i16, y: y as i16 };
-        'check:
-            for &surrounding in &surroundings
-            {
-                if draw[usize::from(current_pos + surrounding)] == b'O'
+            },
+            b'7' => {
+                if last_pipe != b'L'
                 {
-                    for y in current_pos.y..MAP_HEIGHT as i16 - 1
-                    {
-                        let first = coord_to_index(current_pos.x, y);
-                        if draw[first] != b'I' { break; }
-                        draw[first] = b'O';
-                        num_open_tiles += 1;
-
-                        for x in current_pos.x+1..MAP_WIDTH as i16 - 1
-                        {
-                            let current = coord_to_index(x, y);
-                            if draw[current] != b'I' { break; }
-                            draw[current] = b'O';
-                            num_open_tiles += 1;
-                        }
-                    }
-                    break 'check;
+                    enclosed = !enclosed;
                 }
-            }
+                last_pipe = current;
+                continue;
+            },
+            b'|' | b'F' | b'L' => {
+                enclosed = !enclosed;
+                last_pipe = current;
+                continue;
+            },
+            _ => continue,
+        }
+
+        if enclosed
+        {
+            num_enclosed_tiles += 1;
         }
     }
-    let num_enclosed_tiles =
-        MAP_WIDTH*MAP_HEIGHT - num_loop_tiles - num_open_tiles;
     let part2_time = start.elapsed();
 
-    // Print out the newly drawn map for satisfaction
-    for i in 0..MAP_HEIGHT
-    {
-        println!(
-            "{}",
-            unsafe {std::str::from_utf8_unchecked(
-                &draw[i*MAP_WIDTH..(i+1)*MAP_WIDTH]
-            )}
-        );
-    }
     println!("Numbers of steps until farthest position: {}", num_steps);
     println!("Numbers of enclosed tiles: {}", num_enclosed_tiles);
     println!("==== Elapsed time");
