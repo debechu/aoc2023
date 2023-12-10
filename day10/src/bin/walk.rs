@@ -82,7 +82,7 @@ fn main()
         starting_point,
         starting_point,
     ];
-    let mut num_loops = 1;
+    let mut num_loop_tiles = 1;
     loop
     {
         for i in 0..paths.len()
@@ -113,9 +113,9 @@ fn main()
         }
 
         if previous_positions[0] == previous_positions[1] { break; }
-        num_loops += 1;
+        num_loop_tiles += 1;
     }
-    num_loops *= 2;
+    num_loop_tiles *= 2;
 
     let mut num_open_tiles = 0;
     for i in 0..MAP_WIDTH
@@ -230,7 +230,8 @@ fn main()
             }
         }
     }
-    let num_enclosed_tiles = MAP_WIDTH*MAP_HEIGHT - num_loops - num_open_tiles;
+    let num_enclosed_tiles =
+        MAP_WIDTH*MAP_HEIGHT - num_loop_tiles - num_open_tiles;
     let part2_time = start.elapsed();
 
     // Print out the newly drawn map for satisfaction
